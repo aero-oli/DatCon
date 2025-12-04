@@ -38,6 +38,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.border.LineBorder;
 import src.Files.ConvertDat;
 import src.Files.DatFile;
+import src.Files.DatJob;
 import src.Files.FileBeingUsed;
 import src.Files.Persist;
 import src.Files.DatConLog;
@@ -329,6 +330,25 @@ public class TimeAxisPanel extends JPanel
         setUpper(tickUpper);
     }
 
+    public void applyJob(DatJob job) {
+        if (job == null || datFile == null) {
+            return;
+        }
+        tickLower = job.getTickLower();
+        tickUpper = job.getTickUpper();
+        offset = job.getOffset();
+        setUpperLower();
+    }
+
+    public void saveToJob(DatJob job) {
+        if (job == null) {
+            return;
+        }
+        job.setTickLower(tickLower);
+        job.setTickUpper(tickUpper);
+        job.setOffset(offset);
+    }
+
     public void actionPerformed(ActionEvent e) {
         try {
             JComponent source = (JComponent) (e.getSource());
@@ -352,6 +372,7 @@ public class TimeAxisPanel extends JPanel
             }
             setUpperLower();
             datCon.checkState();
+            datCon.timeAxisUpdated();
         } catch (Exception exception) {
             DatConLog.Exception(exception);
         }
@@ -380,6 +401,7 @@ public class TimeAxisPanel extends JPanel
                     setUpper(upperTick);
                 }
                 datCon.checkState();
+                datCon.timeAxisUpdated();
             }
         } catch (Exception exception) {
             DatConLog.Exception(exception);

@@ -40,7 +40,10 @@ import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
+import javax.swing.DefaultListModel;
 import javax.swing.Box;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -65,9 +68,11 @@ import src.Files.DatConPopups;
 import src.Files.DatFile;
 import src.Files.FileBeingUsed;
 import src.Files.Persist;
+import src.Files.DatJob;
 import src.Files.WorkingDir;
 import src.GUI.CheckUpdates;
 import src.GUI.CsvPanel;
+import src.GUI.FileQueuePanel;
 import src.GUI.DatConMenuBar;
 import src.GUI.DataModelDialog;
 import src.GUI.KMLPanel;
@@ -85,6 +90,12 @@ public class DatCon extends JPanel
 
     public DatFile datFile = null;
 
+    private DefaultListModel<DatJob> jobModel = new DefaultListModel<>();
+
+    private FileQueuePanel fileQueuePanel = null;
+
+    private DatJob currentJob = null;
+
     JPanel contentPanel = null;
 
     static JFileChooser fc;
@@ -100,7 +111,7 @@ public class DatCon extends JPanel
     public JButton goButton = new JButton("GO!");
 
     JTextField datFileTextField = new JTextField(
-            "Click here to specify .DAT file");
+            "Click here to specify .DAT file(s)");
 
     JTextField outputDirTextField = new JTextField(
             "Click here to specify output directory");
@@ -122,8 +133,6 @@ public class DatCon extends JPanel
     //public static Dimension datConSize = new Dimension(800, 300);
 
     String datFileName = "";
-
-    Go doit = null;
 
     public DatConMenuBar menuBar = null;
 
@@ -213,6 +222,15 @@ public class DatCon extends JPanel
 
         gbc.gridx = 0;
         gbc.gridy = 2;
+        gbc.gridwidth = 6;
+        gbc.gridheight = 1;
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.anchor = GridBagConstraints.WEST;
+        fileQueuePanel = new FileQueuePanel(this, jobModel);
+        contentPanel.add(fileQueuePanel, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 3;
         gbc.gridheight = 2;
         gbc.gridwidth = 3;
         gbc.fill = GridBagConstraints.BOTH;
@@ -221,7 +239,7 @@ public class DatCon extends JPanel
         contentPanel.add(timeAxisPanel, gbc);
 
         gbc.gridx = 3;
-        gbc.gridy = 2;
+        gbc.gridy = 3;
         gbc.gridheight = 1;
         gbc.gridwidth = 3;
         gbc.fill = GridBagConstraints.BOTH;
@@ -230,7 +248,7 @@ public class DatCon extends JPanel
         contentPanel.add(csvPanel, gbc);
 
         gbc.gridx = 3;
-        gbc.gridy = 3;
+        gbc.gridy = 4;
         gbc.gridheight = 1;
         gbc.gridwidth = 3;
         gbc.fill = GridBagConstraints.BOTH;
@@ -239,7 +257,7 @@ public class DatCon extends JPanel
         contentPanel.add(logFilesPanel, gbc);
 
         gbc.gridx = 3;
-        gbc.gridy = 4;
+        gbc.gridy = 5;
         gbc.gridwidth = 3;
         gbc.gridheight = 1;
         gbc.fill = GridBagConstraints.BOTH;
@@ -248,7 +266,7 @@ public class DatCon extends JPanel
         contentPanel.add(kmlPanel, gbc);
 
         gbc.gridx = 0;
-        gbc.gridy = 5;
+        gbc.gridy = 6;
         gbc.gridwidth = 6;
         gbc.gridheight = 1;
         gbc.fill = GridBagConstraints.BOTH;
@@ -258,17 +276,17 @@ public class DatCon extends JPanel
         goButton.addActionListener(this);
 
         gbc.gridx = 0;
-        gbc.gridy = 6;
+        gbc.gridy = 7;
         gbc.gridwidth = 6;
         gbc.gridheight = 2;
         gbc.fill = GridBagConstraints.BOTH;
         gbc.anchor = GridBagConstraints.WEST;
         contentPanel.add(log, gbc);
 
-        createEmptyBox(1, 8, gbc);
-        createEmptyBox(2, 8, gbc);
-        createEmptyBox(3, 8, gbc);
-        createEmptyBox(4, 8, gbc);
+        createEmptyBox(1, 9, gbc);
+        createEmptyBox(2, 9, gbc);
+        createEmptyBox(3, 9, gbc);
+        createEmptyBox(4, 9, gbc);
 
         outputDirName = Persist.outputDirName;
         File outDirFile = new File(outputDirName);
@@ -280,7 +298,9 @@ public class DatCon extends JPanel
             setDatFile(inputFile);
         } else {
             File inputDir = inputFile.getParentFile();
-            fc.setCurrentDirectory(inputDir);
+            if (inputDir != null) {
+                fc.setCurrentDirectory(inputDir);
+            }
         }
         checkState();
         //contentPanel.setBorder(BorderFactory.createLineBorder(Color.BLUE));
@@ -319,36 +339,11 @@ public class DatCon extends JPanel
     }
 
     private void getNewDatFile() {
-        if (inputFile != null) {
-            fc.setSelectedFile(inputFile);
-        }
-        try {
-            int returnVal = fc.showOpenDialog(this);
-            if (returnVal == JFileChooser.APPROVE_OPTION) {
-                File iFile = fc.getSelectedFile();
-                setDatFile(iFile);
-            }
-        } catch (Exception e) {
-            DatConLog.Exception(e);
-        }
+        promptForDatFiles();
     }
 
     private void setDatFile(File iFile) {
-        try {
-            if (DatFile.isDatFile(iFile.getAbsolutePath())
-                    || DJIAssistantFile.isDJIDat(iFile)
-                    || Persist.invalidStructOK) {
-                PreAnalyze fmTask = new PreAnalyze(iFile, this);
-                fmTask.execute();
-                inputFile = iFile;
-                setInputFile(inputFile);
-            } else {
-                log.Error(
-                        iFile.getAbsolutePath() + " is not a valid .DAT file");
-            }
-        } catch (IOException e) {
-            log.Error(iFile.getAbsolutePath() + " is not a valid .DAT file");
-        }
+        addDatFiles(new File[] { iFile });
     }
 
     public void createFileNames() {
@@ -363,52 +358,136 @@ public class DatCon extends JPanel
         kmlPanel.createFileNames(flyFileNameRoot);
     }
 
-    private class PreAnalyze extends SwingWorker<Object, Object> {
-        File iFile = null;
+    public void createFileNamesForJob(DatJob job) {
+        if (job == null) {
+            return;
+        }
+        datFileName = job.getFile().getAbsolutePath();
+        String flyFileName = job.getFile().getName();
+        String flyFileNameRoot = flyFileName.substring(0,
+                flyFileName.lastIndexOf('.'));
+        csvPanel.createFileNames(flyFileNameRoot);
+        logFilesPanel.createFileNames(flyFileNameRoot);
+        kmlPanel.createFileNames(flyFileNameRoot);
+    }
+
+    public void promptForDatFiles() {
+        if (inputFile != null) {
+            fc.setSelectedFile(inputFile);
+        }
+        int returnVal = fc.showOpenDialog(this);
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            File[] files = fc.getSelectedFiles();
+            if (files == null || files.length == 0) {
+                File single = fc.getSelectedFile();
+                if (single != null) {
+                    files = new File[] { single };
+                }
+            }
+            addDatFiles(files);
+        }
+    }
+
+    private void addDatFiles(File[] files) {
+        if (files == null || files.length == 0)
+            return;
+        for (File iFile : files) {
+            try {
+                if (DatFile.isDatFile(iFile.getAbsolutePath())
+                        || DJIAssistantFile.isDJIDat(iFile)
+                        || Persist.invalidStructOK) {
+                    DatJob job = new DatJob(iFile);
+                    if (!jobModel.contains(job)) {
+                        jobModel.addElement(job);
+                        inputFile = iFile;
+                        Persist.inputFileName = iFile.getAbsolutePath();
+                        if (outputDir == null) {
+                            setOutputDir(iFile.getParentFile());
+                        }
+                        // keep the most recently added job selected
+                        fileQueuePanel.selectJob(job);
+                    }
+                } else {
+                    log.Error(iFile.getAbsolutePath()
+                            + " is not a valid .DAT file");
+                }
+            } catch (IOException e) {
+                log.Error(iFile.getAbsolutePath()
+                        + " is not a valid .DAT file");
+            }
+        }
+        checkState();
+    }
+
+    private class PreAnalyze extends SwingWorker<DatFile, Object> {
+        DatJob job = null;
 
         private DatCon datCon;
 
-        PreAnalyze(File iFile, DatCon datCon) {
-            this.iFile = iFile;
+        PreAnalyze(DatJob job, DatCon datCon) {
+            this.job = job;
             this.datCon = datCon;
         }
 
         @Override
-        protected Object doInBackground() throws Exception {
+        protected DatFile doInBackground() throws Exception {
             startWaitCursor();
+            job.setStatus(DatJob.Status.ANALYZING);
+            refreshJobList();
+            DatFile analyzed = null;
             try {
-                datFile = DatFile.createDatFile(iFile.getAbsolutePath(),
-                        datCon);
-                if (datFile != null) {
-                    datFileName = datFile.getFile().getAbsolutePath();
-                    datFileTextField.setText(datFileName);
-                    //inputFile = datFile.getFile();
-                    Persist.save();
-                    goButton.setBackground(Color.YELLOW);
-                    goButton.setForeground(Color.BLACK);
-                    goButton.setEnabled(false);
-                    goButton.setText("Pre Analyzing .DAT");
-                    datFile.reset();
-                    datFile.preAnalyze();
-                    setFromMarkers();
-                    javax.swing.SwingUtilities.invokeLater(new Runnable() {
-                        @Override
-                        public void run() {
-                            reset();
-                            timeAxisPanel.initFromDatFile(datFile);
-                            LogFilesPanel.instance
-                                    .updateAfterPreAnalyze(datFile);
-                            DatConLog.separator();
-                            createFileNames();
-                            checkState();
-                            Persist.save();
-                        }
-                    });
+                analyzed = DatFile.createDatFile(
+                        job.getFile().getAbsolutePath(), datCon);
+                if (analyzed != null) {
+                    analyzed.reset();
+                    analyzed.preAnalyze();
                 }
             } finally {
                 stopWaitCursor();
             }
-            return null;
+            return analyzed;
+        }
+
+        @Override
+        protected void done() {
+            try {
+                DatFile analyzed = get();
+                if (analyzed != null) {
+                    job.setDatFile(analyzed);
+                    long lowestTick = analyzed.lowestTickNo;
+                    long upperTick = (analyzed.lastMotorStopTick != -1)
+                            ? analyzed.lastMotorStopTick
+                            : analyzed.highestTickNo;
+                    job.setTickLower(lowestTick);
+                    job.setTickUpper(upperTick);
+                    job.setOffset(0);
+                    if (job == currentJob) {
+                        datFile = analyzed;
+                        datFileName = analyzed.getFile().getAbsolutePath();
+                        datFileTextField.setText(datFileName);
+                        Persist.save();
+                        goButton.setBackground(Color.YELLOW);
+                        goButton.setForeground(Color.BLACK);
+                        goButton.setEnabled(false);
+                        goButton.setText("Pre Analyzing .DAT");
+                        setFromMarkers();
+                        reset();
+                        timeAxisPanel.initFromDatFile(analyzed);
+                        LogFilesPanel.instance.updateAfterPreAnalyze(analyzed);
+                        DatConLog.separator();
+                        createFileNamesForJob(job);
+                        timeAxisPanel.saveToJob(job);
+                    }
+                    job.setStatus(DatJob.Status.READY);
+                } else {
+                    job.setStatus(DatJob.Status.ERROR);
+                }
+                refreshJobList();
+                checkState();
+                Persist.save();
+            } catch (Exception e) {
+                DatConLog.Exception(e);
+            }
         }
     }
 
@@ -418,75 +497,218 @@ public class DatCon extends JPanel
         }
     }
 
-    private void go() {
-        ConvertDat convertDat = datFile.createConVertDat();
-        try {
-            log.Info("Converting " + datFileName);
-            createPrintStreams();
-            setArgs(convertDat);
-            convertDat.createRecordParsers();
-            //            convertDat.createSystemRecords();
-            doit = new Go(convertDat);
-            doit.execute();
-        } catch (FileBeingUsed fbu) {
-            log.Error("Can't convert because " + fbu.getFileName()
-                    + " is being used");
+    public void onJobSelected(DatJob job) {
+        if (job == currentJob) {
+            return;
+        }
+        syncCurrentJobFromUI();
+        currentJob = job;
+        if (job == null) {
+            datFile = null;
+            datFileName = "";
+            datFileTextField
+                    .setText("Click here to specify .DAT file(s)");
+            checkState();
+            return;
+        }
+        inputFile = job.getFile();
+        datFileName = job.getFile().getAbsolutePath();
+        datFileTextField.setText(datFileName);
+        if (job.getDatFile() == null) {
+            PreAnalyze fmTask = new PreAnalyze(job, this);
+            fmTask.execute();
+        } else {
+            try {
+                datFile = job.getDatFile();
+                timeAxisPanel.reset();
+                timeAxisPanel.initFromDatFile(datFile);
+                timeAxisPanel.applyJob(job);
+                LogFilesPanel.instance.updateAfterPreAnalyze(datFile);
+                createFileNamesForJob(job);
+            } catch (Exception e) {
+                DatConLog.Exception(e);
+            }
+        }
+        checkState();
+    }
+
+    public void removeJob(DatJob job) {
+        if (job == null) {
+            return;
+        }
+        int idx = jobModel.indexOf(job);
+        jobModel.removeElement(job);
+        if (job == currentJob) {
+            currentJob = null;
+            datFile = null;
+            datFileName = "";
+            if (jobModel.size() > 0) {
+                int newIndex = Math.max(0, idx - 1);
+                fileQueuePanel.selectJob(jobModel.getElementAt(newIndex));
+            } else {
+                datFileTextField
+                        .setText("Click here to specify .DAT file(s)");
+            }
+        }
+        refreshJobList();
+        checkState();
+    }
+
+    public void clearJobs() {
+        jobModel.clear();
+        currentJob = null;
+        datFile = null;
+        datFileName = "";
+        datFileTextField.setText("Click here to specify .DAT file(s)");
+        refreshJobList();
+        checkState();
+    }
+
+    private void syncCurrentJobFromUI() {
+        if (currentJob != null && currentJob.getDatFile() != null) {
+            timeAxisPanel.saveToJob(currentJob);
         }
     }
 
-    private class Go extends SwingWorker<AnalyzeDatResults, Void> {
-        ConvertDat convertDat = null;
+    public void timeAxisUpdated() {
+        syncCurrentJobFromUI();
+    }
 
-        AnalyzeDatResults results;
+    private void refreshJobList() {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                fileQueuePanel.refresh();
+            }
+        });
+    }
 
-        Go(ConvertDat convertDat) {
-            this.convertDat = convertDat;
+    private void go() {
+        syncCurrentJobFromUI();
+        List<DatJob> readyJobs = new ArrayList<>();
+        for (int i = 0; i < jobModel.size(); i++) {
+            DatJob job = jobModel.getElementAt(i);
+            if (job.getStatus() == DatJob.Status.READY
+                    || job.getStatus() == DatJob.Status.DONE) {
+                readyJobs.add(job);
+            }
         }
-        //
-        //        public void setAnalyzeDat(ConvertDat convertDat) {
-        //            this.convertDat = convertDat;
-        //        }
-        //
-        //        public Go() {
-        //        }
+        if (readyJobs.isEmpty()) {
+            log.Error("No analyzed .DAT files ready to convert");
+            return;
+        }
+        BatchGo batchGo = new BatchGo(readyJobs);
+        batchGo.execute();
+    }
+
+    private class BatchGo extends SwingWorker<Void, DatJob> {
+        private final List<DatJob> jobs;
+
+        BatchGo(List<DatJob> jobs) {
+            this.jobs = jobs;
+        }
 
         @Override
-        protected AnalyzeDatResults doInBackground() throws Exception {
-            try {
-                startWaitCursor();
-                goButton.setBackground(Color.BLUE);
-                goButton.setForeground(Color.WHITE);
-                goButton.setEnabled(false);
-                goButton.setText("Converting .DAT");
-                datFile.reset();
-                results = convertDat.analyze(true);
-            } catch (Exception e) {
-                //                LoggingPanel.instance.Error("Can't Convert");
-                DatConLog.Exception(e, "Can't Convert");
-                stopWaitCursor();
+        protected Void doInBackground() throws Exception {
+            startWaitCursor();
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    goButton.setBackground(Color.BLUE);
+                    goButton.setForeground(Color.WHITE);
+                    goButton.setEnabled(false);
+                }
+            });
+            int total = jobs.size();
+            int index = 1;
+            for (DatJob job : jobs) {
+                if (!job.isReady()) {
+                    continue;
+                }
+                job.setStatus(DatJob.Status.PROCESSING);
+                refreshJobList();
+                try {
+                    processJob(job, index, total);
+                    job.setStatus(DatJob.Status.DONE);
+                    job.setErrorMessage("");
+                } catch (FileBeingUsed fbu) {
+                    job.setStatus(DatJob.Status.ERROR);
+                    job.setErrorMessage("In use: " + fbu.getFileName());
+                    log.Error("Can't convert " + job.getFile().getName()
+                            + " because " + fbu.getFileName()
+                            + " is being used");
+                } catch (Exception e) {
+                    job.setStatus(DatJob.Status.ERROR);
+                    job.setErrorMessage(e.getMessage() == null ? "Error"
+                            : e.getMessage());
+                    DatConLog.Exception(e);
+                } finally {
+                    refreshJobList();
+                }
+                index++;
             }
-            return results;
+            return null;
+        }
+
+        private void processJob(DatJob job, int index, int total)
+                throws Exception {
+            datFile = job.getDatFile();
+            if (datFile == null) {
+                throw new IllegalStateException(
+                        "File not pre-analyzed: " + job.getDisplayName());
+            }
+            datFile.reset();
+            javax.swing.SwingUtilities.invokeAndWait(new Runnable() {
+                @Override
+                public void run() {
+                    datFileName = job.getFile().getAbsolutePath();
+                    datFileTextField.setText(datFileName);
+                    createFileNamesForJob(job);
+                    try {
+                        timeAxisPanel.reset();
+                        timeAxisPanel.initFromDatFile(datFile);
+                        timeAxisPanel.applyJob(job);
+                        LogFilesPanel.instance.updateAfterPreAnalyze(datFile);
+                    } catch (Exception e) {
+                        DatConLog.Exception(e);
+                    }
+                    goButton.setText(
+                            "Converting (" + index + "/" + total + ")");
+                }
+            });
+
+            ConvertDat convertDat = datFile.createConVertDat();
+            // Push the per-file timing/offset and panel settings into convertDat
+            timeAxisPanel.setArgs(convertDat);
+            csvPanel.setArgs(convertDat);
+            logFilesPanel.setArgs(convertDat);
+            kmlPanel.setArgs(convertDat);
+            try {
+                createPrintStreams();
+                convertDat.createRecordParsers();
+                AnalyzeDatResults results = convertDat.analyze(true);
+                log.Info(results.toString());
+                csvPanel.updateAfterGo();
+                logFilesPanel.updateAfterGo();
+                kmlPanel.updateAfterGo(convertDat);
+            } finally {
+                closePrintStreams();
+            }
         }
 
         @Override
         protected void done() {
             try {
-                super.done();
-                updateAfterGo();
-                closePrintStreams();
-                // datFile.close();
-                log.Info(results.toString());
-                checkState();
                 stopWaitCursor();
+                goButton.setBackground(Color.GREEN);
+                goButton.setForeground(Color.BLACK);
+                goButton.setEnabled(true);
+                goButton.setText("GO!");
+                refreshJobList();
+                checkState();
             } catch (Exception e) {
                 DatConLog.Exception(e);
             }
-        }
-
-        private void updateAfterGo() {
-            csvPanel.updateAfterGo();
-            logFilesPanel.updateAfterGo();
-            kmlPanel.updateAfterGo(convertDat);
         }
     }
 
@@ -549,37 +771,39 @@ public class DatCon extends JPanel
     }
 
     public void checkState() {
-        String cantGo = "";
+        StringBuilder cantGo = new StringBuilder();
         if (outputDir != null && outputDirTextField.getText().length() > 0) {
             outputDirTextField.setBackground(Color.WHITE);
         } else {
             outputDirTextField.setBackground(Color.RED);
-            cantGo += "OutputDir not specified,";
+            cantGo.append("OutputDir not specified,");
         }
-        if (inputFile != null && datFileTextField.getText().length() > 0) {
+        if (jobModel.size() > 0) {
             datFileTextField.setBackground(Color.WHITE);
+            List<String> jobIssues = new ArrayList<>();
+            for (int i = 0; i < jobModel.size(); i++) {
+                DatJob job = jobModel.getElementAt(i);
+                if (!job.isReady()) {
+                    jobIssues.add(job.getDisplayName() + " not analyzed");
+                } else if (job.getTickLower() >= job.getTickUpper()) {
+                    jobIssues.add(job.getDisplayName() + " lower >= upper");
+                }
+            }
+            if (!jobIssues.isEmpty()) {
+                cantGo.append(String.join("; ", jobIssues));
+            }
         } else {
             datFileTextField.setBackground(Color.RED);
-            cantGo += ".DAT file not specified,";
+            cantGo.append("No .DAT files selected,");
         }
-        if (timeAxisPanel.tickLower >= timeAxisPanel.tickUpper) {
-            cantGo += "Lower is greater than Upper";
-        }
-        // if (timeAxisPanel.gpsLockTick > 0
-        // && timeAxisPanel.tickLower >= timeAxisPanel.gpsLockTick) {
-        // dashwarePanel.enableDashware(true);
-        // }
-        // if (timeAxisPanel.gpsLockTick == -1
-        // || timeAxisPanel.tickLower < timeAxisPanel.gpsLockTick) {
-        // dashwarePanel.enableDashware(false);
-        // }
         if (cantGo.length() > 0) {
             goButton.setBackground(Color.RED);
             goButton.setForeground(Color.BLACK);
             goButton.setEnabled(false);
-            goButton.setText("Can't Go: " + cantGo);
+            goButton.setText("Can't Go: " + cantGo.toString());
         } else {
             goButton.setBackground(Color.GREEN);
+            goButton.setForeground(Color.BLACK);
             goButton.setEnabled(true);
             goButton.setText("GO!");
         }
@@ -676,6 +900,7 @@ public class DatCon extends JPanel
             fc.addChoosableFileFilter(filter);
             // fc.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
             fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+            fc.setMultiSelectionEnabled(true);
 
             dc = new JFileChooser();
             dc.setAcceptAllFileFilterUsed(false);
