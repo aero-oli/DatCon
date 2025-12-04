@@ -3,17 +3,24 @@ package src.GUI;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Color;
+import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JList;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ListSelectionModel;
+import javax.swing.ListCellRenderer;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
+import javax.swing.border.CompoundBorder;
 
 import src.Files.DatJob;
 import src.apps.DatCon;
@@ -39,10 +46,13 @@ public class FileQueuePanel extends JPanel
         this.datCon = datCon;
         this.model = model;
         setLayout(new GridBagLayout());
+        setBackground(new Color(248, 248, 250));
+        setBorder(new LineBorder(new Color(216, 220, 226), 1, true));
 
         list = new JList<>(model);
         list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         list.addListSelectionListener(this);
+        list.setCellRenderer(new JobRenderer());
         JScrollPane scrollPane = new JScrollPane(list);
         scrollPane.setPreferredSize(new Dimension(400, 90));
 
@@ -63,14 +73,17 @@ public class FileQueuePanel extends JPanel
         gbc.gridx = 0;
         add(addButton, gbc);
         addButton.addActionListener(this);
+        addButton.setMargin(new java.awt.Insets(6, 10, 6, 10));
 
         gbc.gridx = 1;
         add(removeButton, gbc);
         removeButton.addActionListener(this);
+        removeButton.setMargin(new java.awt.Insets(6, 10, 6, 10));
 
         gbc.gridx = 2;
         add(clearButton, gbc);
         clearButton.addActionListener(this);
+        clearButton.setMargin(new java.awt.Insets(6, 10, 6, 10));
     }
 
     public void refresh() {
@@ -104,5 +117,63 @@ public class FileQueuePanel extends JPanel
             return;
         DatJob selected = list.getSelectedValue();
         datCon.onJobSelected(selected);
+    }
+
+    private static class JobRenderer extends JLabel
+            implements ListCellRenderer<DatJob> {
+        private static final long serialVersionUID = 1L;
+        private static final Color READY = new Color(35, 179, 119);
+        private static final Color PROCESSING = new Color(32, 129, 226);
+        private static final Color ERROR = new Color(200, 65, 65);
+        private static final Color ANALYZING = new Color(242, 158, 36);
+        private static final Color PENDING = new Color(120, 120, 120);
+
+        JobRenderer() {
+            setOpaque(true);
+            setBorder(new EmptyBorder(4, 6, 4, 6));
+        }
+
+        @Override
+        public Component getListCellRendererComponent(JList<? extends DatJob> list,
+                DatJob value, int index, boolean isSelected, boolean cellHasFocus) {
+            if (value == null) {
+                setText("");
+                return this;
+            }
+            String status = value.getStatus().toString();
+            if (value.hasError() && value.getErrorMessage().length() > 0) {
+                status += " - " + value.getErrorMessage();
+            }
+            setText(value.getDisplayName() + "  •  " + status);
+            Color fg = PENDING;
+            switch (value.getStatus()) {
+            case READY:
+            case DONE:
+                fg = READY;
+                break;
+            case PROCESSING:
+                fg = PROCESSING;
+                break;
+            case ERROR:
+                fg = ERROR;
+                break;
+            case ANALYZING:
+                fg = ANALYZING;
+                break;
+            default:
+                break;
+            }
+            setForeground(fg.darker());
+            if (isSelected) {
+                setBackground(new Color(230, 240, 255));
+                setBorder(new CompoundBorder(
+                        new LineBorder(new Color(180, 200, 240), 1, true),
+                        new EmptyBorder(4, 6, 4, 6)));
+            } else {
+                setBackground(Color.WHITE);
+                setBorder(new EmptyBorder(4, 6, 4, 6));
+            }
+            return this;
+        }
     }
 }

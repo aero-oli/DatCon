@@ -28,6 +28,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.KeyboardFocusManager;
+import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentEvent;
@@ -58,7 +59,11 @@ import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.Timer;
 import javax.swing.UIManager;
+import javax.swing.BorderFactory;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 
 import src.Files.AnalyzeDatResults;
 import src.Files.ConvertDat;
@@ -111,7 +116,7 @@ public class DatCon extends JPanel
     public JButton goButton = new JButton("GO!");
 
     JTextField datFileTextField = new JTextField(
-            "Click here to specify .DAT file(s)");
+            "Use Add .DAT files below");
 
     JTextField outputDirTextField = new JTextField(
             "Click here to specify output directory");
@@ -148,6 +153,14 @@ public class DatCon extends JPanel
 
     private Timer resizeTimer = null;
 
+    // UI styling
+    private static final Color PANEL_BG = new Color(248, 248, 250);
+    private static final Color FRAME_BG = new Color(242, 242, 245);
+    private static final Color PRIMARY = new Color(32, 129, 226);
+    private static final Color ACCENT = new Color(35, 179, 119);
+    private static final Font HEADER_FONT = new Font("SansSerif", Font.BOLD, 14);
+    private static final Font LABEL_FONT = new Font("SansSerif", Font.PLAIN, 12);
+
     public DatCon() {
         DatCon.instance = this;
         new Persist();
@@ -163,7 +176,8 @@ public class DatCon extends JPanel
         contentPanel.setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         contentPanel.setOpaque(true);
-        contentPaneBGColor = contentPanel.getBackground();
+        contentPaneBGColor = FRAME_BG;
+        contentPanel.setBackground(FRAME_BG);
         log = new LoggingPanel();
         gbc.fill = GridBagConstraints.BOTH;
         gbc.anchor = GridBagConstraints.FIRST_LINE_START;
@@ -173,13 +187,14 @@ public class DatCon extends JPanel
         gbc.weightx = 1.0;
         gbc.weighty = 0.5;
 
+        JLabel datFileLabel = new JLabel(".DAT file");
+        datFileLabel.setFont(LABEL_FONT);
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 1;
         gbc.gridheight = 1;
         gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.EAST;
-        JLabel datFileLabel = new JLabel(".DAT file");
         contentPanel.add(datFileLabel, gbc);
 
         gbc.gridx = 1;
@@ -189,17 +204,22 @@ public class DatCon extends JPanel
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.anchor = GridBagConstraints.WEST;
         contentPanel.add(datFileTextField, gbc);
-        //        datFileTextField
-        //                .setBorder(BorderFactory.createLineBorder(Color.YELLOW));
-        datFileTextField.addMouseListener(this);
+        datFileTextField.setBorder(new CompoundBorder(
+                new LineBorder(PRIMARY, 1, true),
+                new EmptyBorder(6, 8, 6, 8)));
+        datFileTextField.setBackground(Color.WHITE);
+        datFileTextField.setFont(LABEL_FONT);
+        datFileTextField.setEditable(false);
+        datFileTextField.setFocusable(false);
 
+        JLabel outDirLabel = new JLabel("Output Dir  ");
+        outDirLabel.setFont(LABEL_FONT);
         gbc.gridx = 0;
         gbc.gridy = 1;
         gbc.gridwidth = 1;
         gbc.gridheight = 1;
         gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.EAST;
-        JLabel outDirLabel = new JLabel("Output Dir  ");
         contentPanel.add(outDirLabel, gbc);
 
         gbc.gridx = 1;
@@ -209,6 +229,11 @@ public class DatCon extends JPanel
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.anchor = GridBagConstraints.WEST;
         contentPanel.add(outputDirTextField, gbc);
+        outputDirTextField.setBorder(new CompoundBorder(
+                new LineBorder(PRIMARY, 1, true),
+                new EmptyBorder(6, 8, 6, 8)));
+        outputDirTextField.setBackground(Color.WHITE);
+        outputDirTextField.setFont(LABEL_FONT);
         outputDirTextField.addMouseListener(this);
 
         gbc.gridx = 5;
@@ -218,6 +243,7 @@ public class DatCon extends JPanel
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.anchor = GridBagConstraints.WEST;
         contentPanel.add(dirViewIt, gbc);
+        styleButton(dirViewIt, PRIMARY, Color.WHITE);
         dirViewIt.addActionListener(this);
 
         gbc.gridx = 0;
@@ -227,6 +253,7 @@ public class DatCon extends JPanel
         gbc.fill = GridBagConstraints.BOTH;
         gbc.anchor = GridBagConstraints.WEST;
         fileQueuePanel = new FileQueuePanel(this, jobModel);
+        stylePanel(fileQueuePanel);
         contentPanel.add(fileQueuePanel, gbc);
 
         gbc.gridx = 0;
@@ -236,6 +263,7 @@ public class DatCon extends JPanel
         gbc.fill = GridBagConstraints.BOTH;
         gbc.anchor = GridBagConstraints.WEST;
         timeAxisPanel = new TimeAxisPanel(this);
+        stylePanel(timeAxisPanel);
         contentPanel.add(timeAxisPanel, gbc);
 
         gbc.gridx = 3;
@@ -245,6 +273,7 @@ public class DatCon extends JPanel
         gbc.fill = GridBagConstraints.BOTH;
         gbc.anchor = GridBagConstraints.WEST;
         csvPanel = new CsvPanel(this);
+        stylePanel(csvPanel);
         contentPanel.add(csvPanel, gbc);
 
         gbc.gridx = 3;
@@ -254,6 +283,7 @@ public class DatCon extends JPanel
         gbc.fill = GridBagConstraints.BOTH;
         gbc.anchor = GridBagConstraints.WEST;
         logFilesPanel = new LogFilesPanel(this);
+        stylePanel(logFilesPanel);
         contentPanel.add(logFilesPanel, gbc);
 
         gbc.gridx = 3;
@@ -263,6 +293,7 @@ public class DatCon extends JPanel
         gbc.fill = GridBagConstraints.BOTH;
         gbc.anchor = GridBagConstraints.WEST;
         kmlPanel = new KMLPanel(this);
+        stylePanel(kmlPanel);
         contentPanel.add(kmlPanel, gbc);
 
         gbc.gridx = 0;
@@ -273,6 +304,8 @@ public class DatCon extends JPanel
         gbc.anchor = GridBagConstraints.WEST;
         contentPanel.add(goButton, gbc);
         goButton.setEnabled(false);
+        goButton.setFont(HEADER_FONT);
+        styleButton(goButton, ACCENT, Color.WHITE);
         goButton.addActionListener(this);
 
         gbc.gridx = 0;
@@ -339,7 +372,7 @@ public class DatCon extends JPanel
     }
 
     private void getNewDatFile() {
-        promptForDatFiles();
+        // Deprecated: selection now handled via Add .DAT files button
     }
 
     private void setDatFile(File iFile) {
@@ -481,11 +514,20 @@ public class DatCon extends JPanel
                     job.setStatus(DatJob.Status.READY);
                 } else {
                     job.setStatus(DatJob.Status.ERROR);
+                    job.setErrorMessage("Pre-analyze failed");
                 }
                 refreshJobList();
                 checkState();
                 Persist.save();
             } catch (Exception e) {
+                job.setStatus(DatJob.Status.ERROR);
+                String msg = (e.getCause() != null && e.getCause().getMessage() != null)
+                        ? e.getCause().getMessage()
+                        : (e.getMessage() != null ? e.getMessage()
+                                : "Pre-analyze error");
+                job.setErrorMessage(msg);
+                refreshJobList();
+                checkState();
                 DatConLog.Exception(e);
             }
         }
@@ -506,8 +548,7 @@ public class DatCon extends JPanel
         if (job == null) {
             datFile = null;
             datFileName = "";
-            datFileTextField
-                    .setText("Click here to specify .DAT file(s)");
+            datFileTextField.setText("Use Add .DAT files below");
             checkState();
             return;
         }
@@ -537,29 +578,28 @@ public class DatCon extends JPanel
             return;
         }
         int idx = jobModel.indexOf(job);
-        jobModel.removeElement(job);
-        if (job == currentJob) {
-            currentJob = null;
-            datFile = null;
-            datFileName = "";
-            if (jobModel.size() > 0) {
-                int newIndex = Math.max(0, idx - 1);
-                fileQueuePanel.selectJob(jobModel.getElementAt(newIndex));
-            } else {
-                datFileTextField
-                        .setText("Click here to specify .DAT file(s)");
+            jobModel.removeElement(job);
+            if (job == currentJob) {
+                currentJob = null;
+                datFile = null;
+                datFileName = "";
+                if (jobModel.size() > 0) {
+                    int newIndex = Math.max(0, idx - 1);
+                    fileQueuePanel.selectJob(jobModel.getElementAt(newIndex));
+                } else {
+                    datFileTextField.setText("Use Add .DAT files below");
+                }
             }
+            refreshJobList();
+            checkState();
         }
-        refreshJobList();
-        checkState();
-    }
 
     public void clearJobs() {
         jobModel.clear();
         currentJob = null;
         datFile = null;
         datFileName = "";
-        datFileTextField.setText("Click here to specify .DAT file(s)");
+        datFileTextField.setText("Use Add .DAT files below");
         refreshJobList();
         checkState();
     }
@@ -581,6 +621,22 @@ public class DatCon extends JPanel
                 fileQueuePanel.refresh();
             }
         });
+    }
+
+    private void stylePanel(JPanel panel) {
+        panel.setBackground(PANEL_BG);
+        panel.setBorder(new CompoundBorder(
+                new LineBorder(new Color(216, 220, 226), 1, true),
+                new EmptyBorder(8, 8, 8, 8)));
+    }
+
+    private void styleButton(JButton button, Color bg, Color fg) {
+        button.setBackground(bg);
+        button.setForeground(fg);
+        button.setFocusPainted(false);
+        button.setBorder(new CompoundBorder(new LineBorder(bg.darker(), 1, true),
+                new EmptyBorder(6, 12, 6, 12)));
+        button.setFont(LABEL_FONT);
     }
 
     private void go() {
@@ -813,9 +869,7 @@ public class DatCon extends JPanel
     public void mouseClicked(MouseEvent e) {
         try {
             JComponent source = (JComponent) (e.getSource());
-            if (source == datFileTextField) {
-                getNewDatFile();
-            } else if (source == outputDirTextField) {
+            if (source == outputDirTextField) {
                 if (outputDir != null)
                     dc.setSelectedFile(outputDir);
                 int returnVal = dc.showOpenDialog(this);

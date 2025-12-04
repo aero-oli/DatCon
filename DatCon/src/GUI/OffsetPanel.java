@@ -31,6 +31,8 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.border.LineBorder;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
 
 import src.Files.DatFile;
 import src.Files.Persist;
@@ -58,8 +60,10 @@ public class OffsetPanel extends JPanel implements ActionListener {
         buttonGroup.add(flightStart);
 
         setLayout(new GridBagLayout());
-        setBorder(new LineBorder(Color.BLACK, 1, true));
+        setBorder(new CompoundBorder(new LineBorder(new Color(216, 220, 226), 1, true),
+                new EmptyBorder(6, 6, 6, 6)));
         setOpaque(true);
+        setBackground(new Color(245, 245, 247));
 
         GridBagConstraints gbc = new GridBagConstraints();
 

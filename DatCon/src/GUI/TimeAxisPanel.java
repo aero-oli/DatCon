@@ -36,6 +36,8 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.SwingUtilities;
 import javax.swing.border.LineBorder;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
 import src.Files.ConvertDat;
 import src.Files.DatFile;
 import src.Files.DatJob;
@@ -104,8 +106,10 @@ public class TimeAxisPanel extends JPanel
         upperGroup.add(stopRecording);
 
         setLayout(new GridBagLayout());
-        setBorder(new LineBorder(Color.BLACK, 1, true));
+        setBorder(new CompoundBorder(new LineBorder(new Color(216, 220, 226), 1, true),
+                new EmptyBorder(6, 6, 6, 6)));
         setOpaque(true);
+        setBackground(new Color(248, 248, 250));
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.NONE;
@@ -117,7 +121,7 @@ public class TimeAxisPanel extends JPanel
         gbc.weighty = 1.0;
         gbc.gridwidth = 3;
         JLabel label = new JLabel("Time Axis");
-        Font font = new Font("Verdana", Font.BOLD, 16);
+        Font font = new Font("SansSerif", Font.BOLD, 14);
         label.setFont(font);
         add(label, gbc);
         gbc.weightx = 0.5;

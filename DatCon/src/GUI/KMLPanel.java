@@ -23,6 +23,8 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.border.LineBorder;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
 
 import src.Files.ConvertDat;
 import src.Files.ConvertDat.KmlType;
@@ -70,8 +72,10 @@ public class KMLPanel extends JPanel
         log = datCon.log;
 
         setLayout(new GridBagLayout());
-        setBorder(new LineBorder(Color.BLACK, 1, true));
+        setBorder(new CompoundBorder(new LineBorder(new Color(216, 220, 226), 1, true),
+                new EmptyBorder(6, 6, 6, 6)));
         setOpaque(true);
+        setBackground(new Color(248, 248, 250));
 
         GridBagConstraints gbc = new GridBagConstraints();
 
@@ -83,7 +87,7 @@ public class KMLPanel extends JPanel
         gbc.weightx = 1.0;
         gbc.anchor = GridBagConstraints.FIRST_LINE_START;
         JLabel label = new JLabel("KML");
-        Font font = new Font("Verdana", Font.BOLD, 16);
+        Font font = new Font("SansSerif", Font.BOLD, 14);
         label.setFont(font);
         add(label, gbc);
         gbc.weightx = 0.5;
