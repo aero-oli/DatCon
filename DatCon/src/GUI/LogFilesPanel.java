@@ -28,6 +28,7 @@ import src.Files.DatConLog;
 import src.Files.DatFile;
 import src.Files.FileBeingUsed;
 import src.Files.Persist;
+import src.Files.DatJob;
 import src.V3.Files.DatFileV3;
 import src.apps.DatCon;
 
@@ -176,6 +177,30 @@ public class LogFilesPanel extends JPanel
     public void dontViewIt() {
         eventViewIt.setEnabled(false);
         configViewIt.setEnabled(false);
+    }
+
+    public void applyJob(DatJob job) {
+        if (job == null)
+            return;
+        eventFileButton.setSelected(job.isLogEventEnabled());
+        configFileButton.setSelected(job.isLogConfigEnabled());
+        recDefsFileButton.setSelected(job.isLogRecDefsEnabled());
+        eventFile.setText(job.getLogEventFileName());
+        configFile.setText(job.getLogConfigFileName());
+        recDefsFile.setText(job.getLogRecDefsFileName());
+        // Enable recDefs only when applicable; keep toggle in sync
+        recDefsFileButton.setEnabled(job.getDatFile() instanceof DatFileV3);
+    }
+
+    public void saveToJob(DatJob job) {
+        if (job == null)
+            return;
+        job.setLogEventEnabled(eventFileButton.isSelected());
+        job.setLogConfigEnabled(configFileButton.isSelected());
+        job.setLogRecDefsEnabled(recDefsFileButton.isSelected());
+        job.setLogEventFileName(eventFile.getText());
+        job.setLogConfigFileName(configFile.getText());
+        job.setLogRecDefsFileName(recDefsFile.getText());
     }
 
     public void actionPerformed(ActionEvent evt) {

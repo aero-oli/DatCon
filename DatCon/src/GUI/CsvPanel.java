@@ -45,6 +45,7 @@ import javax.swing.border.EmptyBorder;
 import src.Files.ConvertDat;
 import src.Files.CsvWriter;
 import src.Files.DatConLog;
+import src.Files.DatJob;
 import src.Files.FileBeingUsed;
 import src.apps.DatCon;
 
@@ -179,6 +180,25 @@ public class CsvPanel extends JPanel
 
     public void dontViewIt() {
         viewIt.setEnabled(false);
+    }
+
+    public void applyJob(DatJob job) {
+        if (job == null)
+            return;
+        csvButton.setSelected(job.isCsvEnabled());
+        eventCsvButton.setSelected(job.isCsvEventLog());
+        csvFile.setText(job.getCsvFileName());
+        sampRatePanel.setRate(job.getSampleRate());
+        viewIt.setEnabled(false);
+    }
+
+    public void saveToJob(DatJob job) {
+        if (job == null)
+            return;
+        job.setCsvEnabled(csvButton.isSelected());
+        job.setCsvEventLog(eventCsvButton.isSelected());
+        job.setCsvFileName(csvFile.getText());
+        job.setSampleRate(sampRatePanel.getRate());
     }
 
     @Override

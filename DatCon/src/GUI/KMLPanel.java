@@ -31,6 +31,7 @@ import src.Files.ConvertDat.KmlType;
 import src.Files.FileBeingUsed;
 import src.Files.GoogleElevation;
 import src.Files.DatConLog;
+import src.Files.DatJob;
 import src.apps.DatCon;
 
 @SuppressWarnings("serial")
@@ -173,6 +174,34 @@ public class KMLPanel extends JPanel
 
     public void dontViewIt() {
         viewIt.setEnabled(false);
+    }
+
+    public void applyJob(DatJob job) {
+        if (job == null)
+            return;
+        kmlFileTextField.setText(job.getKmlFileName());
+        homePointElevation = job.getHomePointElevation();
+        boolean hasHp = !Double.isNaN(homePointElevation);
+        if (hasHp) {
+            homePointElevationField.setValue(homePointElevation);
+        } else {
+            homePointElevationField.setText("Enter HP Elevation");
+        }
+        groundTrackSelected = job.isKmlGroundTrack();
+        profileSelected = job.isKmlProfile();
+        groundTrack.setSelected(groundTrackSelected);
+        profile.setSelected(profileSelected);
+        profile.setEnabled(hasHp || profileSelected);
+        viewIt.setEnabled(false);
+    }
+
+    public void saveToJob(DatJob job) {
+        if (job == null)
+            return;
+        job.setKmlFileName(kmlFileTextField.getText());
+        job.setKmlGroundTrack(groundTrack.isSelected());
+        job.setKmlProfile(profile.isSelected());
+        job.setHomePointElevation(homePointElevation);
     }
 
     @Override

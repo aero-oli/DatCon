@@ -195,35 +195,10 @@ public class DatCon extends JPanel
         gbc.weightx = 1.0;
         gbc.weighty = 0.5;
 
-        JLabel datFileLabel = new JLabel(".DAT file");
-        datFileLabel.setFont(LABEL_FONT);
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 1;
-        gbc.gridheight = 1;
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.anchor = GridBagConstraints.EAST;
-        contentPanel.add(datFileLabel, gbc);
-
-        gbc.gridx = 1;
-        gbc.gridy = 0;
-        gbc.gridwidth = 5;
-        gbc.gridheight = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.anchor = GridBagConstraints.WEST;
-        contentPanel.add(datFileTextField, gbc);
-        datFileTextField.setBorder(new CompoundBorder(
-                new LineBorder(PRIMARY, 1, true),
-                new EmptyBorder(6, 8, 6, 8)));
-        datFileTextField.setBackground(Color.WHITE);
-        datFileTextField.setFont(LABEL_FONT);
-        datFileTextField.setEditable(false);
-        datFileTextField.setFocusable(false);
-
         JLabel outDirLabel = new JLabel("Output Dir  ");
         outDirLabel.setFont(LABEL_FONT);
         gbc.gridx = 0;
-        gbc.gridy = 1;
+        gbc.gridy = 0;
         gbc.gridwidth = 1;
         gbc.gridheight = 1;
         gbc.fill = GridBagConstraints.NONE;
@@ -231,7 +206,7 @@ public class DatCon extends JPanel
         contentPanel.add(outDirLabel, gbc);
 
         gbc.gridx = 1;
-        gbc.gridy = 1;
+        gbc.gridy = 0;
         gbc.gridwidth = 4;
         gbc.gridheight = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -245,7 +220,7 @@ public class DatCon extends JPanel
         outputDirTextField.addMouseListener(this);
 
         gbc.gridx = 5;
-        gbc.gridy = 1;
+        gbc.gridy = 0;
         gbc.gridwidth = 1;
         gbc.gridheight = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -255,60 +230,28 @@ public class DatCon extends JPanel
         dirViewIt.addActionListener(this);
 
         gbc.gridx = 0;
-        gbc.gridy = 2;
+        gbc.gridy = 1;
         gbc.gridwidth = 6;
         gbc.gridheight = 1;
         gbc.fill = GridBagConstraints.BOTH;
         gbc.anchor = GridBagConstraints.WEST;
+        gbc.weighty = 1.0;
         fileQueuePanel = new FileQueuePanel(this, jobModel);
         stylePanel(fileQueuePanel);
         contentPanel.add(fileQueuePanel, gbc);
+        gbc.weighty = 0.0;
 
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        gbc.gridheight = 2;
-        gbc.gridwidth = 3;
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.anchor = GridBagConstraints.WEST;
+        // Panels are still instantiated (for logic) but not shown; the table is the primary editor now.
         timeAxisPanel = new TimeAxisPanel(this);
-        stylePanel(timeAxisPanel);
-        contentPanel.add(timeAxisPanel, gbc);
-
-        gbc.gridx = 3;
-        gbc.gridy = 3;
-        gbc.gridheight = 1;
-        gbc.gridwidth = 3;
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.anchor = GridBagConstraints.WEST;
         csvPanel = new CsvPanel(this);
-        stylePanel(csvPanel);
-        contentPanel.add(csvPanel, gbc);
-
-        gbc.gridx = 3;
-        gbc.gridy = 4;
-        gbc.gridheight = 1;
-        gbc.gridwidth = 3;
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.anchor = GridBagConstraints.WEST;
         logFilesPanel = new LogFilesPanel(this);
-        stylePanel(logFilesPanel);
-        contentPanel.add(logFilesPanel, gbc);
-
-        gbc.gridx = 3;
-        gbc.gridy = 5;
-        gbc.gridwidth = 3;
-        gbc.gridheight = 1;
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.anchor = GridBagConstraints.WEST;
         kmlPanel = new KMLPanel(this);
-        stylePanel(kmlPanel);
-        contentPanel.add(kmlPanel, gbc);
 
         gbc.gridx = 0;
-        gbc.gridy = 6;
+        gbc.gridy = 2;
         gbc.gridwidth = 6;
         gbc.gridheight = 1;
-        gbc.fill = GridBagConstraints.BOTH;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.anchor = GridBagConstraints.WEST;
         contentPanel.add(goButton, gbc);
         goButton.setEnabled(false);
@@ -317,17 +260,12 @@ public class DatCon extends JPanel
         goButton.addActionListener(this);
 
         gbc.gridx = 0;
-        gbc.gridy = 7;
+        gbc.gridy = 3;
         gbc.gridwidth = 6;
-        gbc.gridheight = 2;
+        gbc.gridheight = 1;
         gbc.fill = GridBagConstraints.BOTH;
         gbc.anchor = GridBagConstraints.WEST;
         contentPanel.add(log, gbc);
-
-        createEmptyBox(1, 9, gbc);
-        createEmptyBox(2, 9, gbc);
-        createEmptyBox(3, 9, gbc);
-        createEmptyBox(4, 9, gbc);
 
         outputDirName = Persist.outputDirName;
         File outDirFile = new File(outputDirName);
@@ -410,9 +348,49 @@ public class DatCon extends JPanel
         String flyFileName = job.getFile().getName();
         String flyFileNameRoot = flyFileName.substring(0,
                 flyFileName.lastIndexOf('.'));
-        csvPanel.createFileNames(flyFileNameRoot);
-        logFilesPanel.createFileNames(flyFileNameRoot);
-        kmlPanel.createFileNames(flyFileNameRoot);
+        // Only generate defaults when the job doesn't already have user-specified names.
+        if (job.getCsvFileName() == null || job.getCsvFileName().isEmpty()) {
+            csvPanel.createFileNames(flyFileNameRoot);
+            job.setCsvFileName(csvPanel.csvFileName);
+        } else {
+            csvPanel.csvFileName = job.getCsvFileName();
+            csvPanel.csvFile.setText(job.getCsvFileName());
+        }
+
+        // Log files: only populate defaults for names that are still blank, without
+        // overwriting any user-edited values.
+        String defaultElo = flyFileNameRoot + ".log.txt";
+        String defaultClo = flyFileNameRoot + ".config.txt";
+        String defaultRecDefs = flyFileNameRoot + ".recDefs.txt";
+
+        if (job.getLogEventFileName() == null
+                || job.getLogEventFileName().isEmpty()) {
+            job.setLogEventFileName(defaultElo);
+        }
+        logFilesPanel.eloFileName = job.getLogEventFileName();
+        logFilesPanel.eventFile.setText(job.getLogEventFileName());
+
+        if (job.getLogConfigFileName() == null
+                || job.getLogConfigFileName().isEmpty()) {
+            job.setLogConfigFileName(defaultClo);
+        }
+        logFilesPanel.cloFileName = job.getLogConfigFileName();
+        logFilesPanel.configFile.setText(job.getLogConfigFileName());
+
+        if (job.getLogRecDefsFileName() == null
+                || job.getLogRecDefsFileName().isEmpty()) {
+            job.setLogRecDefsFileName(defaultRecDefs);
+        }
+        logFilesPanel.recDefsFileName = job.getLogRecDefsFileName();
+        logFilesPanel.recDefsFile.setText(job.getLogRecDefsFileName());
+
+        if (job.getKmlFileName() == null || job.getKmlFileName().isEmpty()) {
+            kmlPanel.createFileNames(flyFileNameRoot);
+            job.setKmlFileName(kmlPanel.kmlFileName);
+        } else {
+            kmlPanel.kmlFileName = job.getKmlFileName();
+            kmlPanel.kmlFileTextField.setText(job.getKmlFileName());
+        }
     }
 
     public void promptForDatFiles() {
@@ -450,6 +428,17 @@ public class DatCon extends JPanel
                         || Persist.invalidStructOK) {
                     DatJob job = new DatJob(iFile);
                     if (!jobModel.contains(job)) {
+                        // initialize per-file defaults
+                        job.setSampleRate(Persist.csvSampleRate);
+                        job.setCsvEnabled(true);
+                        job.setCsvEventLog(false);
+                        job.setLogEventEnabled(Persist.logPanelEFB);
+                        job.setLogConfigEnabled(Persist.logPanelCFB);
+                        job.setLogRecDefsEnabled(Persist.logPanelRDFB);
+                        job.setLowerMarker("Recording Start");
+                        job.setUpperMarker("Recording Stop");
+                        job.setOffsetMarker("Recording Start");
+                        createFileNamesForJob(job);
                         jobModel.addElement(job);
                         inputFile = iFile;
                         Persist.inputFileName = iFile.getAbsolutePath();
@@ -485,7 +474,16 @@ public class DatCon extends JPanel
     }
 
     private File showNativeDirectoryDialog() {
+        String original = System.getProperty("apple.awt.fileDialogForDirectories");
+        // Make sure the dialog stays in directory-select mode on macOS
+        System.setProperty("apple.awt.fileDialogForDirectories", "true");
         dirFileDialog.setVisible(true);
+        // restore property (avoid leaking global change)
+        if (original == null) {
+            System.clearProperty("apple.awt.fileDialogForDirectories");
+        } else {
+            System.setProperty("apple.awt.fileDialogForDirectories", original);
+        }
         String directory = dirFileDialog.getDirectory();
         String file = dirFileDialog.getFile();
         if (directory == null || file == null) {
@@ -634,7 +632,9 @@ public class DatCon extends JPanel
         if (job == currentJob) {
             return;
         }
+        // Persist edits from the previously selected job before switching.
         syncCurrentJobFromUI();
+
         currentJob = job;
         if (job == null) {
             datFile = null;
@@ -646,6 +646,9 @@ public class DatCon extends JPanel
         inputFile = job.getFile();
         datFileName = job.getFile().getAbsolutePath();
         datFileTextField.setText(datFileName);
+        csvPanel.applyJob(job);
+        logFilesPanel.applyJob(job);
+        kmlPanel.applyJob(job);
         if (job.getDatFile() == null) {
             PreAnalyze fmTask = new PreAnalyze(job, this);
             fmTask.execute();
@@ -696,12 +699,18 @@ public class DatCon extends JPanel
     }
 
     private void syncCurrentJobFromUI() {
-        if (currentJob != null && currentJob.getDatFile() != null) {
-            timeAxisPanel.saveToJob(currentJob);
+        if (currentJob == null) {
+            return;
         }
+        // Persist panel state into the current job so GO uses the latest edits.
+        timeAxisPanel.saveToJob(currentJob);
+        csvPanel.saveToJob(currentJob);
+        logFilesPanel.saveToJob(currentJob);
+        kmlPanel.saveToJob(currentJob);
     }
 
     public void timeAxisUpdated() {
+        // Capture time-axis edits immediately.
         syncCurrentJobFromUI();
     }
 
@@ -731,12 +740,34 @@ public class DatCon extends JPanel
     }
 
     private void go() {
+        // Persist any panel edits on the selected job before validation/run.
         syncCurrentJobFromUI();
+        if (outputDir == null || outputDirName == null
+                || outputDirName.length() == 0) {
+            log.Error("Output directory not set");
+            return;
+        }
+        if (!outputDir.exists()) {
+            if (!outputDir.mkdirs()) {
+                log.Error("Cannot create output directory: " + outputDirName);
+                return;
+            }
+        }
         List<DatJob> readyJobs = new ArrayList<>();
         for (int i = 0; i < jobModel.size(); i++) {
             DatJob job = jobModel.getElementAt(i);
-            if (job.getStatus() == DatJob.Status.READY
-                    || job.getStatus() == DatJob.Status.DONE) {
+            if (job.getStatus() == DatJob.Status.ERROR) {
+                continue;
+            }
+            try {
+                ensureAnalyzed(job);
+            } catch (Exception e) {
+                job.setStatus(DatJob.Status.ERROR);
+                job.setErrorMessage(e.getMessage());
+                DatConLog.Exception(e);
+                continue;
+            }
+            if (job.isReady()) {
                 readyJobs.add(job);
             }
         }
@@ -746,6 +777,79 @@ public class DatCon extends JPanel
         }
         BatchGo batchGo = new BatchGo(readyJobs);
         batchGo.execute();
+    }
+
+    private DatFile ensureAnalyzed(DatJob job) throws Exception {
+        DatFile analyzed = job.getDatFile();
+        if (analyzed != null) {
+            return analyzed;
+        }
+        analyzed = DatFile.createDatFile(job.getFile().getAbsolutePath(), this);
+        if (analyzed == null) {
+            throw new IllegalStateException(
+                    "Unable to analyze (null) " + job.getDisplayName());
+        }
+        analyzed.reset();
+        analyzed.preAnalyze();
+        job.setDatFile(analyzed);
+        long lowestTick = analyzed.lowestTickNo;
+        long upperTick = (analyzed.lastMotorStopTick != -1)
+                ? analyzed.lastMotorStopTick
+                : analyzed.highestTickNo;
+        // Only apply defaults if the user hasn't already typed their own bounds.
+        if (!job.isLowerUserSet()) {
+            job.setTickLower(lowestTick);
+        }
+        if (!job.isUpperUserSet()) {
+            job.setTickUpper(upperTick);
+        }
+        // apply marker prefs to ticks/offset now that we have metadata, but don't
+        // override user-entered numeric values
+        applyMarkersToJob(job, analyzed);
+        job.setStatus(DatJob.Status.READY);
+        job.setErrorMessage("");
+        createFileNamesForJob(job);
+        return analyzed;
+    }
+
+    private void applyMarkersToJob(DatJob job, DatFile df) {
+        if (df == null)
+            return;
+        String lower = job.getLowerMarker();
+        if (!job.isLowerUserSet()) {
+            if ("Recording Start".equalsIgnoreCase(lower)) {
+                job.setTickLower(df.lowestTickNo);
+            } else if ("Motor Start".equalsIgnoreCase(lower)
+                    && df.firstMotorStartTick != 0) {
+                job.setTickLower(df.firstMotorStartTick);
+            } else if ("GPS Lock".equalsIgnoreCase(lower)
+                    && df.gpsLockTick != -1) {
+                job.setTickLower(df.gpsLockTick);
+            }
+        }
+
+        String upper = job.getUpperMarker();
+        if (!job.isUpperUserSet()) {
+            if ("Recording Stop".equalsIgnoreCase(upper)) {
+                job.setTickUpper(df.highestTickNo);
+            } else if ("Motor Stop".equalsIgnoreCase(upper)
+                    && df.lastMotorStopTick != -1) {
+                job.setTickUpper(df.lastMotorStopTick);
+            }
+        }
+
+        String offsetM = job.getOffsetMarker();
+        if (!job.isOffsetUserSet()) {
+            if ("Recording Start".equalsIgnoreCase(offsetM)) {
+                job.setOffset(df.lowestTickNo);
+            } else if ("Motor Start".equalsIgnoreCase(offsetM)
+                    && df.firstMotorStartTick != 0) {
+                job.setOffset(df.firstMotorStartTick);
+            } else if ("Flight Start".equalsIgnoreCase(offsetM)
+                    && df.flightStartTick != -1) {
+                job.setOffset(df.flightStartTick);
+            }
+        }
     }
 
     private class BatchGo extends SwingWorker<Void, DatJob> {
@@ -776,35 +880,72 @@ public class DatCon extends JPanel
                 refreshJobList();
                 try {
                     processJob(job, index, total);
-                    job.setStatus(DatJob.Status.DONE);
-                    job.setErrorMessage("");
+                    // processJob sets status to ERROR/DONE as needed. If it left the
+                    // job in READY or PROCESSING, treat that as success.
+                    if (job.getStatus() != DatJob.Status.ERROR) {
+                        job.setStatus(DatJob.Status.DONE);
+                        job.setErrorMessage("");
+                    }
                 } catch (FileBeingUsed fbu) {
                     job.setStatus(DatJob.Status.ERROR);
                     job.setErrorMessage("In use: " + fbu.getFileName());
                     log.Error("Can't convert " + job.getFile().getName()
                             + " because " + fbu.getFileName()
                             + " is being used");
-                } catch (Exception e) {
-                    job.setStatus(DatJob.Status.ERROR);
-                    job.setErrorMessage(e.getMessage() == null ? "Error"
-                            : e.getMessage());
-                    DatConLog.Exception(e);
-                } finally {
-                    refreshJobList();
-                }
-                index++;
+            } catch (Exception e) {
+                job.setStatus(DatJob.Status.ERROR);
+                job.setErrorMessage(e.getMessage() == null ? "Error"
+                        : e.getMessage());
+                DatConLog.Exception(e);
+            } catch (Throwable t) {
+                job.setStatus(DatJob.Status.ERROR);
+                job.setErrorMessage(
+                        t.getMessage() == null ? "Unexpected error" : t.getMessage());
+                DatConLog.Exception(new Exception(t));
+            } finally {
+                refreshJobList();
             }
+            index++;
+        }
             return null;
         }
 
         private void processJob(DatJob job, int index, int total)
                 throws Exception {
-            datFile = job.getDatFile();
-            if (datFile == null) {
-                throw new IllegalStateException(
-                        "File not pre-analyzed: " + job.getDisplayName());
+            final DatFile analyzed;
+            try {
+                analyzed = ensureAnalyzed(job);
+                // Keep the field for any legacy code that still reads it,
+                // but use the local reference for the rest of this method to
+                // avoid races if the selection listener clears datFile while
+                // the batch worker is running.
+                datFile = analyzed;
+            } catch (Exception ex) {
+                job.setStatus(DatJob.Status.ERROR);
+                job.setErrorMessage(ex.getMessage() == null ? "Analyze failed"
+                        : ex.getMessage());
+                DatConLog.Exception(ex);
+                return;
             }
-            datFile.reset();
+            if (analyzed == null) {
+                job.setStatus(DatJob.Status.ERROR);
+                job.setErrorMessage("Dat file not analyzed");
+                return;
+            }
+            if (job.getTickUpper() <= job.getTickLower()) {
+                job.setStatus(DatJob.Status.ERROR);
+                job.setErrorMessage("Upper tick must be greater than lower tick");
+                return;
+            }
+            try {
+                analyzed.reset();
+            } catch (Exception ex) {
+                job.setStatus(DatJob.Status.ERROR);
+                job.setErrorMessage(ex.getMessage() == null ? "Reset failed"
+                        : ex.getMessage());
+                DatConLog.Exception(ex);
+                return;
+            }
             javax.swing.SwingUtilities.invokeAndWait(new Runnable() {
                 @Override
                 public void run() {
@@ -813,9 +954,12 @@ public class DatCon extends JPanel
                     createFileNamesForJob(job);
                     try {
                         timeAxisPanel.reset();
-                        timeAxisPanel.initFromDatFile(datFile);
+                        timeAxisPanel.initFromDatFile(analyzed);
                         timeAxisPanel.applyJob(job);
-                        LogFilesPanel.instance.updateAfterPreAnalyze(datFile);
+                        csvPanel.applyJob(job);
+                        logFilesPanel.applyJob(job);
+                        kmlPanel.applyJob(job);
+                        LogFilesPanel.instance.updateAfterPreAnalyze(analyzed);
                     } catch (Exception e) {
                         DatConLog.Exception(e);
                     }
@@ -824,23 +968,67 @@ public class DatCon extends JPanel
                 }
             });
 
-            ConvertDat convertDat = datFile.createConVertDat();
-            // Push the per-file timing/offset and panel settings into convertDat
-            timeAxisPanel.setArgs(convertDat);
-            csvPanel.setArgs(convertDat);
-            logFilesPanel.setArgs(convertDat);
-            kmlPanel.setArgs(convertDat);
+            ConvertDat convertDat;
             try {
+                convertDat = analyzed.createConVertDat();
+            } catch (Exception ex) {
+                job.setStatus(DatJob.Status.ERROR);
+                job.setErrorMessage(ex.getMessage() == null ? "Convert init failed"
+                        : ex.getMessage());
+                DatConLog.Exception(ex);
+                return;
+            }
+            if (convertDat == null) {
+                job.setStatus(DatJob.Status.ERROR);
+                job.setErrorMessage("Convert init returned null");
+                return;
+            }
+            try {
+                log.Info("Starting convert for " + job.getDisplayName());
+                // Open writers before wiring them into convertDat
                 createPrintStreams();
+                // Push the per-file timing/offset and panel settings into convertDat
+                timeAxisPanel.setArgs(convertDat);
+                csvPanel.setArgs(convertDat);
+                logFilesPanel.setArgs(convertDat);
+                kmlPanel.setArgs(convertDat);
+                if (csvPanel.csvButton.isSelected()
+                        && (csvPanel.csvWriter == null
+                                || job.getCsvFileName() == null
+                                || job.getCsvFileName().isEmpty())) {
+                    job.setStatus(DatJob.Status.ERROR);
+                    job.setErrorMessage("CSV writer not opened");
+                    return;
+                }
                 convertDat.createRecordParsers();
+                if (convertDat.records == null
+                        || convertDat.records.isEmpty()) {
+                    job.setStatus(DatJob.Status.ERROR);
+                    job.setErrorMessage("No record parsers built");
+                    return;
+                }
                 AnalyzeDatResults results = convertDat.analyze(true);
                 log.Info(results.toString());
                 csvPanel.updateAfterGo();
                 logFilesPanel.updateAfterGo();
                 kmlPanel.updateAfterGo(convertDat);
+                // Validate expected outputs
+                if (csvPanel.csvButton.isSelected()) {
+                    File expectedCsv = new File(outputDirName,
+                            job.getCsvFileName());
+                    DatConLog.Log("Post-analyze CSV length=" + expectedCsv.length()
+                            + " file=" + expectedCsv.getAbsolutePath());
+                    if (!expectedCsv.exists() || expectedCsv.length() == 0) {
+                        job.setStatus(DatJob.Status.ERROR);
+                        job.setErrorMessage("CSV not generated");
+                        return;
+                    }
+                }
             } finally {
                 closePrintStreams();
             }
+            job.setStatus(DatJob.Status.DONE);
+            job.setErrorMessage("");
         }
 
         @Override

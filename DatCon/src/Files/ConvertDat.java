@@ -29,9 +29,11 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Vector;
 
-import src.DatConRecs.*;
 import src.Files.DatHeader.AcType;
 import src.apps.DatCon;
+import src.DatConRecs.Dictionary;
+import src.DatConRecs.GoTxt50_12;
+import src.DatConRecs.Payload;
 import src.DatConRecs.RecDef.RecordDef;
 
 public class ConvertDat {
@@ -48,7 +50,7 @@ public class ConvertDat {
 
     public long timeOffset = 0;
 
-    public Vector<Record> records = new Vector<Record>();
+    public Vector<src.DatConRecs.Record> records = new Vector<src.DatConRecs.Record>();
 
     public enum KmlType {
         NONE, GROUNDTRACK, PROFILE
@@ -198,7 +200,7 @@ public class ConvertDat {
         return latitudeHP;
     }
 
-    public void setRecords(Vector<Record> recs) {
+    public void setRecords(Vector<src.DatConRecs.Record> recs) {
         records = recs;
     }
 
@@ -208,7 +210,7 @@ public class ConvertDat {
 
     public void createRecordParsers() {
         GoTxt50_12.current = null;
-        Vector<Record> rcrds = new Vector<Record>();
+        Vector<src.DatConRecs.Record> rcrds = new Vector<src.DatConRecs.Record>();
         try {
             int numNoRecParsers = 0;
             int numCreatedParsers = 0;
@@ -219,11 +221,12 @@ public class ConvertDat {
             Iterator<RecSpec> recInDatIter = recsInDat.values().iterator();
             while (recInDatIter.hasNext()) {
                 RecSpec recInDat = recInDatIter.next();
-                Vector<Record> recordInstVec = getRecordInst(recInDat);
+                Vector<src.DatConRecs.Record> recordInstVec = getRecordInst(
+                        recInDat);
                 if (recordInstVec != null && recordInstVec.size() > 0) {
                     for (int recordInstVecIndex = 0; recordInstVecIndex < recordInstVec
                             .size(); recordInstVecIndex++) {
-                        Record recordInst = recordInstVec
+                        src.DatConRecs.Record recordInst = recordInstVec
                                 .get(recordInstVecIndex);
                         int recInstLength = recordInst.getLength();
                         if (recInstLength <= recInDat.getLength()) { // recInstLength == -1 means it's a RecType.STRING
@@ -252,10 +255,10 @@ public class ConvertDat {
             Iterator<Integer> iter = Dictionary.defaultOrder.iterator();
             while (iter.hasNext()) {
                 int recId = iter.next().intValue();
-                Record foundRecord = null;
-                Iterator<Record> recordIter = rcrds.iterator();
+                src.DatConRecs.Record foundRecord = null;
+                Iterator<src.DatConRecs.Record> recordIter = rcrds.iterator();
                 while (recordIter.hasNext()) {
-                    Record rcrd = recordIter.next();
+                    src.DatConRecs.Record rcrd = recordIter.next();
                     if (rcrd.getId() == recId && !(rcrd instanceof RecordDef)) {
                         records.add(rcrd);
                         foundRecord = rcrd;
@@ -265,9 +268,9 @@ public class ConvertDat {
                     rcrds.remove(foundRecord);
                 }
             }
-            Iterator<Record> recordIter = rcrds.iterator();
+            Iterator<src.DatConRecs.Record> recordIter = rcrds.iterator();
             while (recordIter.hasNext()) {
-                Record rcrd = recordIter.next();
+                src.DatConRecs.Record rcrd = recordIter.next();
                 records.add(rcrd);
             }
 
@@ -276,7 +279,7 @@ public class ConvertDat {
         }
     }
 
-    protected Vector<Record> getRecordInst(RecSpec recSpec) {
+    protected Vector<src.DatConRecs.Record> getRecordInst(RecSpec recSpec) {
         throw new RuntimeException("ConvertDat.getRecordInst(RecInDat  called");
     }
 
@@ -441,7 +444,7 @@ public class ConvertDat {
     public void createXMLGuts() throws IOException {
         axes.clear();
         for (int i = 0; i < records.size(); i++) {
-            ((Record) records.get(i)).printCols(lineType.XML);
+            ((src.DatConRecs.Record) records.get(i)).printCols(lineType.XML);
         }
         Iterator<Axis> iter = axes.iterator();
         while (iter.hasNext()) {
@@ -459,7 +462,7 @@ public class ConvertDat {
     public void setCsvWriter(CsvWriter writer) {
         csvWriter = writer;
         for (int i = 0; i < records.size(); i++) {
-            ((Record) records.get(i)).setCsvWriter(writer);
+            ((src.DatConRecs.Record) records.get(i)).setCsvWriter(writer);
         }
     }
 

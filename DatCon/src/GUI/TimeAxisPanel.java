@@ -348,9 +348,9 @@ public class TimeAxisPanel extends JPanel
         if (job == null) {
             return;
         }
-        job.setTickLower(tickLower);
-        job.setTickUpper(tickUpper);
-        job.setOffset(offset);
+        job.setTickLowerUser(tickLower);
+        job.setTickUpperUser(tickUpper);
+        job.setOffsetUser(offset);
     }
 
     public void actionPerformed(ActionEvent e) {

@@ -32,7 +32,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
 
-import src.DatConRecs.Record;
 import src.Files.Corrupted.Type;
 import src.Files.DatHeader.AcType;
 import src.V1.Files.DatFileV1;
@@ -276,7 +275,7 @@ public class DatFile {
         }
         startOfRecord = startOfRecords;
         setPosition(startOfRecord);
-        Record.totalNumRecExceptions = 0;
+        src.DatConRecs.Record.totalNumRecExceptions = 0;
     }
 
     public void skipOver(int num) throws IOException {

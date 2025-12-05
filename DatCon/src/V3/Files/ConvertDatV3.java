@@ -24,7 +24,6 @@ import java.util.Vector;
 
 import src.DatConRecs.Dictionary;
 import src.DatConRecs.Payload;
-import src.DatConRecs.Record;
 import src.DatConRecs.RecDef.RecordDef;
 import src.Files.AnalyzeDatResults;
 import src.Files.ConvertDat;
@@ -56,15 +55,21 @@ public class ConvertDatV3 extends ConvertDat {
         insertFWDateStr();
         boolean processedPayload = false;
         this.printVersion = printVersion;
-        final int sampleSize = (int) (_datFile.getClockRate() / sampleRate);
+        // Guard against an invalid or zero sample rate coming from UI edits.
+        final float safeSampleRate = (sampleRate <= 0.0f) ? 1.0f : sampleRate;
+        final int sampleSize = (int) (_datFile.getClockRate() / safeSampleRate);
+        int csvLinesWritten = 0;
 
         try {
             _datFile.reset();
             // If there is a .csv being produced go ahead and output
             // the first row containing the column headings
             if (csvWriter != null) {
+                DatConLog.Log("CSV header write begin");
                 csvWriter.print("Tick#,offsetTime");
                 printCsvLine(lineType.HEADER);
+                csvLinesWritten++;
+                DatConLog.Log("CSV header write done");
             }
             long lastTickNoPrinted = -sampleSize;
 
@@ -82,12 +87,14 @@ public class ConvertDatV3 extends ConvertDat {
                         Payload payload = new Payload(_datFile, payloadStart,
                                 payloadLength, payloadType, tickNo);
                         try {
-                            ((Record) records.get(i)).process(payload);
+                            ((src.DatConRecs.Record) records.get(i))
+                                    .process(payload);
                             processedPayload = true;
                         } catch (Exception e) {
                             String errMsg = "Can't process record "
-                                    + ((Record) records.get(i)) + " tickNo="
-                                    + tickNo + " filePos=" + _datFile.getPos();
+                                    + ((src.DatConRecs.Record) records.get(i))
+                                    + " tickNo=" + tickNo + " filePos="
+                                    + _datFile.getPos();
                             if (Persist.EXPERIMENTAL_DEV) {
                                 System.out.println(errMsg);
                                 e.printStackTrace();
@@ -108,6 +115,7 @@ public class ConvertDatV3 extends ConvertDat {
                         printCsvLine(lineType.LINE);
                         lastTickNoPrinted = tickNo;
                         processedPayload = true;
+                        csvLinesWritten++;
                     }
                 }
             }
@@ -117,14 +125,19 @@ public class ConvertDatV3 extends ConvertDat {
             //            throw new RuntimeException(".DAT Corrupted");
         } catch (FileEnd e) {
         } catch (Exception e) {
+            // Previously swallowed, which could leave an empty CSV while showing success.
+            DatConLog.Exception(e);
+            // Wrap to fit the declared throws IOException signature.
+            throw new IOException(e);
         } finally {
             _datFile.close();
             DatConLog.Log("CRC Error Ratio "
                     + _datFile.getErrorRatio(Corrupted.Type.CRC));
             DatConLog.Log("Other Error Ratio "
                     + _datFile.getErrorRatio(Corrupted.Type.Other));
-            DatConLog.Log(
-                    "TotalNumRecExceptions = " + Record.totalNumRecExceptions);
+            DatConLog.Log("TotalNumRecExceptions = "
+                    + src.DatConRecs.Record.totalNumRecExceptions);
+            DatConLog.Log("CSV lines written (incl header): " + csvLinesWritten);
         }
         return _datFile.getResults();
     }
@@ -135,9 +148,9 @@ public class ConvertDatV3 extends ConvertDat {
     }
 
     @Override
-    protected Vector<Record> getRecordInst(RecSpec recInDat) {
-        Vector<Record> retv = new Vector<Record>();
-        Record rec = null;
+    protected Vector<src.DatConRecs.Record> getRecordInst(RecSpec recInDat) {
+        Vector<src.DatConRecs.Record> retv = new Vector<src.DatConRecs.Record>();
+        src.DatConRecs.Record rec = null;
         rec = Dictionary.getRecordInst(src.DatConRecs.String.Dictionary.entries,
                 recInDat, this, true);
         if (rec != null) {
@@ -214,8 +227,8 @@ public class ConvertDatV3 extends ConvertDat {
         //        }
     }
 
-    private Record getRecordInstEngineered(RecSpec recInDat) {
-        Record retv = null;
+    private src.DatConRecs.Record getRecordInstEngineered(RecSpec recInDat) {
+        src.DatConRecs.Record retv = null;
         retv = Dictionary.getRecordInst(src.DatConRecs.Dictionary.entries,
                 recInDat, this, true);
         if (retv != null) {
@@ -227,7 +240,7 @@ public class ConvertDatV3 extends ConvertDat {
         return retv;
     }
 
-    private Record getRecordInstFromDat(RecSpec recInDat) {
+    private src.DatConRecs.Record getRecordInstFromDat(RecSpec recInDat) {
         Vector<RecordDef> recordDefs = _datFile.getRecordDefs();
         if (recordDefs != null) {
             for (int i = 0; i < recordDefs.size(); i++) {
@@ -239,7 +252,7 @@ public class ConvertDatV3 extends ConvertDat {
                 }
             }
         }
-        Record retv = null;
+        src.DatConRecs.Record retv = null;
         if (null != (retv = Dictionary.getRecordInst(
                 src.DatConRecs.FromOtherV3Dats.Dictionary.entries, recInDat,
                 this, false))) {

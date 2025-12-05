@@ -5,7 +5,6 @@ import java.util.Vector;
 
 import src.DatConRecs.Dictionary;
 import src.DatConRecs.Payload;
-import src.DatConRecs.Record;
 import src.Files.AnalyzeDatResults;
 import src.Files.ConvertDat;
 import src.Files.Corrupted;
@@ -64,7 +63,8 @@ public class ConvertDatV1 extends ConvertDat {
                                 Payload payload = new Payload(_datFile,
                                         payloadStart, payloadLength,
                                         payloadType, tickNo);
-                                ((Record) records.get(i)).process(payload);
+                                ((src.DatConRecs.Record) records.get(i))
+                                        .process(payload);
                                 processedSomePayloads = true;
                             }
                         }
@@ -101,7 +101,7 @@ public class ConvertDatV1 extends ConvertDat {
     @Override
     protected Vector<Record> getRecordInst(RecSpec recInDat) {
         Vector<Record> retv = new Vector<Record>();
-        Record rec = null;
+        src.DatConRecs.Record rec = null;
         rec = Dictionary.getRecordInst(src.DatConRecs.String.Dictionary.entries,
                 recInDat, this, true);
         if (rec != null) {
@@ -158,8 +158,8 @@ public class ConvertDatV1 extends ConvertDat {
         return retv;
     }
 
-    private Record getRecordInstEngineered(RecSpec recInDat) {
-        Record retv = null;
+    private src.DatConRecs.Record getRecordInstEngineered(RecSpec recInDat) {
+        src.DatConRecs.Record retv = null;
         retv = Dictionary.getRecordInst(src.DatConRecs.Dictionary.entries,
                 recInDat, this, true);
         if (retv != null) {
@@ -171,8 +171,8 @@ public class ConvertDatV1 extends ConvertDat {
         return retv;
     }
 
-    private Record getRecordInstFromDat(RecSpec recInDat) {
-        Record retv = Dictionary.getRecordInst(
+    private src.DatConRecs.Record getRecordInstFromDat(RecSpec recInDat) {
+        src.DatConRecs.Record retv = Dictionary.getRecordInst(
                 src.DatConRecs.FromViewer.Dictionary.entries, recInDat, this,
                 false);
         return retv;
