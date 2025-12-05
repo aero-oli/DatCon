@@ -29,6 +29,7 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.KeyboardFocusManager;
 import java.awt.Font;
+import java.awt.FileDialog;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentEvent;
@@ -41,6 +42,7 @@ import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -106,6 +108,12 @@ public class DatCon extends JPanel
     static JFileChooser fc;
 
     static JFileChooser dc;
+
+    private static FileDialog datFileDialog;
+
+    private static FileDialog dirFileDialog;
+
+    private static final boolean PREFER_NATIVE_DIALOGS = true;
 
     public static DatCon instance = null;
 
@@ -332,6 +340,9 @@ public class DatCon extends JPanel
         } else {
             File inputDir = inputFile.getParentFile();
             if (inputDir != null) {
+                if (datFileDialog != null) {
+                    datFileDialog.setDirectory(inputDir.getAbsolutePath());
+                }
                 fc.setCurrentDirectory(inputDir);
             }
         }
@@ -406,18 +417,26 @@ public class DatCon extends JPanel
 
     public void promptForDatFiles() {
         if (inputFile != null) {
+            if (datFileDialog != null && inputFile.getParentFile() != null) {
+                datFileDialog.setDirectory(inputFile.getParent());
+            }
             fc.setSelectedFile(inputFile);
         }
-        int returnVal = fc.showOpenDialog(this);
-        if (returnVal == JFileChooser.APPROVE_OPTION) {
-            File[] files = fc.getSelectedFiles();
-            if (files == null || files.length == 0) {
-                File single = fc.getSelectedFile();
-                if (single != null) {
-                    files = new File[] { single };
-                }
-            }
+        if (datFileDialog != null) {
+            File[] files = showNativeDatFileDialog();
             addDatFiles(files);
+        } else {
+            int returnVal = fc.showOpenDialog(this);
+            if (returnVal == JFileChooser.APPROVE_OPTION) {
+                File[] files = fc.getSelectedFiles();
+                if (files == null || files.length == 0) {
+                    File single = fc.getSelectedFile();
+                    if (single != null) {
+                        files = new File[] { single };
+                    }
+                }
+                addDatFiles(files);
+            }
         }
     }
 
@@ -450,6 +469,78 @@ public class DatCon extends JPanel
             }
         }
         checkState();
+    }
+
+    private File[] showNativeDatFileDialog() {
+        datFileDialog.setVisible(true);
+        File[] files = datFileDialog.getFiles();
+        if (files != null && files.length > 0) {
+            return files;
+        }
+        String single = datFileDialog.getFile();
+        if (single != null) {
+            return new File[] { new File(datFileDialog.getDirectory(), single) };
+        }
+        return null;
+    }
+
+    private File showNativeDirectoryDialog() {
+        dirFileDialog.setVisible(true);
+        String directory = dirFileDialog.getDirectory();
+        String file = dirFileDialog.getFile();
+        if (directory == null || file == null) {
+            return null;
+        }
+        return new File(directory, file);
+    }
+
+    private void initChoosers(JFrame owner) {
+        FileNameExtensionFilter filter = new FileNameExtensionFilter(
+                "DAT file", "DAT");
+        fc = new JFileChooser(/* directory */);
+        fc.setAcceptAllFileFilterUsed(false);
+        fc.addChoosableFileFilter(filter);
+        fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        fc.setMultiSelectionEnabled(true);
+
+        dc = new JFileChooser();
+        dc.setAcceptAllFileFilterUsed(false);
+        dc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+
+        if (PREFER_NATIVE_DIALOGS) {
+            datFileDialog = new FileDialog(owner, "Select .DAT files",
+                    FileDialog.LOAD);
+            datFileDialog.setMultipleMode(true);
+            datFileDialog.setFilenameFilter(new FilenameFilter() {
+                @Override
+                public boolean accept(File dir, String name) {
+                    return name.toLowerCase().endsWith(".dat");
+                }
+            });
+            if (isMac()) {
+                String original = System
+                        .getProperty("apple.awt.fileDialogForDirectories");
+                try {
+                    System.setProperty("apple.awt.fileDialogForDirectories",
+                            "true");
+                    dirFileDialog = new FileDialog(owner,
+                            "Select Output Directory", FileDialog.LOAD);
+                    dirFileDialog.setMultipleMode(false);
+                } finally {
+                    if (original == null) {
+                        System.clearProperty("apple.awt.fileDialogForDirectories");
+                    } else {
+                        System.setProperty("apple.awt.fileDialogForDirectories",
+                                original);
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean isMac() {
+        String osName = System.getProperty("os.name", "").toLowerCase();
+        return osName.contains("mac");
     }
 
     private class PreAnalyze extends SwingWorker<DatFile, Object> {
@@ -870,14 +961,28 @@ public class DatCon extends JPanel
         try {
             JComponent source = (JComponent) (e.getSource());
             if (source == outputDirTextField) {
-                if (outputDir != null)
+                if (outputDir != null) {
+                    if (dirFileDialog != null) {
+                        dirFileDialog.setDirectory(outputDir.getAbsolutePath());
+                    }
                     dc.setSelectedFile(outputDir);
-                int returnVal = dc.showOpenDialog(this);
-                if (returnVal == JFileChooser.APPROVE_OPTION) {
-                    setOutputDir(dc.getSelectedFile());
-                    Persist.outputDirName = outputDirName;
-                    Persist.save();
-                    checkState();
+                }
+                if (dirFileDialog != null) {
+                    File chosenDir = showNativeDirectoryDialog();
+                    if (chosenDir != null) {
+                        setOutputDir(chosenDir);
+                        Persist.outputDirName = outputDirName;
+                        Persist.save();
+                        checkState();
+                    }
+                } else {
+                    int returnVal = dc.showOpenDialog(this);
+                    if (returnVal == JFileChooser.APPROVE_OPTION) {
+                        setOutputDir(dc.getSelectedFile());
+                        Persist.outputDirName = outputDirName;
+                        Persist.save();
+                        checkState();
+                    }
                 }
             }
         } catch (Exception exception) {
@@ -945,24 +1050,10 @@ public class DatCon extends JPanel
             UIManager.put("FileChooser.readOnly", Boolean.TRUE);
             UIManager.put("ToolTip.background", Color.WHITE);
             UIManager.put("ToolTip.foreground", Color.BLACK);
-            FileNameExtensionFilter filter = new FileNameExtensionFilter(
-                    "DAT file", "DAT");
-            fc = new JFileChooser(/* directory */);
-            // Action folder = fc.getActionMap().get("New Folder");
-            // folder.setEnabled(false);
-            fc.setAcceptAllFileFilterUsed(false);
-            fc.addChoosableFileFilter(filter);
-            // fc.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-            fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-            fc.setMultiSelectionEnabled(true);
-
-            dc = new JFileChooser();
-            dc.setAcceptAllFileFilterUsed(false);
-            dc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-
             // Create and set up the content pane.
             DatCon datCon = new DatCon();
             frame = new JFrame("DatCon");
+            datCon.initChoosers(frame);
             //        frame.addComponentListener(new ComponentAdapter() {
             //            public void componentResized(ComponentEvent evt) {
             //                Component c = (Component) evt.getSource();
